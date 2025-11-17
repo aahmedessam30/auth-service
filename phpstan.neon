@@ -1,0 +1,10 @@
+parameters:
+    level: 6
+    paths:
+        - app
+        - config
+        - routes
+    excludePaths:
+        analyseAndScan:
+            - app/Providers/BroadcastServiceProvider.php (?)
+    tmpDir: storage/phpstan

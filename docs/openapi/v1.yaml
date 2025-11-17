@@ -1,0 +1,456 @@
+openapi: 3.1.0
+
+info:
+  title: "Auth Service API v1"
+  version: "v1"
+  description: |
+    Authentication microservice API - Version 1
+
+    This service provides JWT-based authentication with RS256 asymmetric signing.
+
+    **Features:**
+    - User registration with JWT token generation
+    - User login with credential verification
+    - Protected profile endpoint
+    - Logout support (client-side token invalidation)
+
+    **Non-versioned endpoints:** Health and version endpoints are available at /api/health and /api/version
+
+    **Rate Limiting:** Authentication endpoints are rate limited to prevent abuse (10 requests per minute for login/register)
+  contact:
+    name: Auth Service Support
+    email: auth-support@example.com
+
+servers:
+  - url: http://localhost:8010/api/v1
+    description: Local development server
+  - url: https://api.example.com/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: |
+        Create a new user account and receive a JWT token.
+
+        **Rate Limit:** 10 requests per minute per IP
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            examples:
+              example1:
+                summary: Valid registration
+                value:
+                  name: "John Doe"
+                  email: "john@example.com"
+                  password: "password123"
+                  password_confirmation: "password123"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              examples:
+                example1:
+                  summary: Successful registration
+                  value:
+                    success: true
+                    data:
+                      token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                      token_type: "Bearer"
+                      expires_in: 3600
+                      user:
+                        id: 1
+                        name: "John Doe"
+                        email: "john@example.com"
+                        created_at: "2025-11-17T10:00:00Z"
+                        updated_at: "2025-11-17T10:00:00Z"
+                    message: "User registered successfully"
+                    code: 201
+                    errors: []
+                    correlation_id: "550e8400-e29b-41d4-a716-446655440000"
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                example1:
+                  summary: Validation errors
+                  value:
+                    success: false
+                    data: null
+                    message: "Validation failed"
+                    code: 422
+                    errors:
+                      email: ["The email has already been taken."]
+                      password: ["The password confirmation does not match."]
+                    correlation_id: "550e8400-e29b-41d4-a716-446655440000"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: |
+        Authenticate user credentials and receive a JWT token.
+
+        **Rate Limit:** 10 requests per minute per IP
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              example1:
+                summary: Valid login
+                value:
+                  email: "john@example.com"
+                  password: "password123"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              examples:
+                example1:
+                  summary: Successful login
+                  value:
+                    success: true
+                    data:
+                      token: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                      token_type: "Bearer"
+                      expires_in: 3600
+                      user:
+                        id: 1
+                        name: "John Doe"
+                        email: "john@example.com"
+                        created_at: "2025-11-17T10:00:00Z"
+                        updated_at: "2025-11-17T10:00:00Z"
+                    message: "Login successful"
+                    code: 200
+                    errors: []
+                    correlation_id: "550e8400-e29b-41d4-a716-446655440000"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                example1:
+                  summary: Invalid credentials
+                  value:
+                    success: false
+                    data: null
+                    message: "Invalid credentials"
+                    code: 401
+                    errors: []
+                    correlation_id: "550e8400-e29b-41d4-a716-446655440000"
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Retrieve the authenticated user's profile information
+      operationId: getUserProfile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+              examples:
+                example1:
+                  summary: User profile
+                  value:
+                    success: true
+                    data:
+                      id: 1
+                      name: "John Doe"
+                      email: "john@example.com"
+                      created_at: "2025-11-17T10:00:00Z"
+                      updated_at: "2025-11-17T10:00:00Z"
+                    message: "Profile retrieved successfully"
+                    code: 200
+                    errors: []
+                    correlation_id: "550e8400-e29b-41d4-a716-446655440000"
+        "401":
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                example1:
+                  summary: Missing token
+                  value:
+                    success: false
+                    data: null
+                    message: "Unauthorized"
+                    code: 401
+                    errors: []
+                    correlation_id: "550e8400-e29b-41d4-a716-446655440000"
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: |
+        Logout the authenticated user (client-side token invalidation pattern).
+
+        The client should discard the JWT token after receiving this response.
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BaseResponse"
+              examples:
+                example1:
+                  summary: Successful logout
+                  value:
+                    success: true
+                    data: null
+                    message: "Logout successful"
+                    code: 200
+                    errors: []
+                    correlation_id: "550e8400-e29b-41d4-a716-446655440000"
+        "401":
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    BaseResponse:
+      type: object
+      required:
+        - success
+        - data
+        - message
+        - code
+        - errors
+        - correlation_id
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the request was successful
+        data:
+          type: object
+          nullable: true
+          description: Response data payload
+        message:
+          type: string
+          description: Human-readable message
+        code:
+          type: integer
+          description: HTTP status code
+        errors:
+          type: array
+          items:
+            type: object
+          description: Array of error objects (empty on success)
+        correlation_id:
+          type: string
+          format: uuid
+          description: Unique request correlation ID for tracing
+
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - password_confirmation
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: "John Doe"
+          description: User's full name
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+          description: User's email address (must be unique)
+        password:
+          type: string
+          minLength: 8
+          format: password
+          example: "password123"
+          description: User's password (minimum 8 characters)
+        password_confirmation:
+          type: string
+          format: password
+          example: "password123"
+          description: Password confirmation (must match password)
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+          description: User's email address
+        password:
+          type: string
+          format: password
+          example: "password123"
+          description: User's password
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: User ID
+        name:
+          type: string
+          example: "John Doe"
+          description: User's full name
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+          description: User's email address
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-11-17T10:00:00Z"
+          description: Account creation timestamp (ISO8601)
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-11-17T10:00:00Z"
+          description: Last update timestamp (ISO8601)
+
+    AuthData:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+          description: JWT access token (RS256 signed)
+        token_type:
+          type: string
+          example: "Bearer"
+          description: Token type (always Bearer)
+        expires_in:
+          type: integer
+          example: 3600
+          description: Token expiration time in seconds
+        user:
+          $ref: "#/components/schemas/UserResponse"
+
+    AuthResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/AuthData"
+
+    ProfileResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/UserResponse"
+
+    ErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/BaseResponse"
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            data:
+              type: object
+              nullable: true
+              example: null
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                email: ["The email field is required."]
+                password: ["The password must be at least 8 characters."]
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token for authentication (RS256 signed).
+
+        Include the token in the Authorization header:
+        `Authorization: Bearer <token>`
+
+        Token payload includes:
+        - sub: User ID
+        - email: User email
+        - name: User name
+        - iat: Issued at timestamp
+        - exp: Expiration timestamp
+        - service_name: Issuing service name
+        - correlation_id: Request correlation ID
+
+security: []
