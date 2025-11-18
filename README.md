@@ -102,7 +102,8 @@ make setup
 
 # Or manually:
 composer install
-make generate-keys
+openssl genrsa -out keys/private.pem 4096
+openssl rsa -in keys/private.pem -pubout -out keys/public.pem
 docker-compose up -d --build
 docker-compose exec app php artisan migrate
 ```
@@ -131,23 +132,23 @@ This service implements **JWT RS256 token generation** as the central authentica
 ### JWT Token Flow
 
 ```
-┌──────────┐         ┌──────────────┐          ┌─────────────┐
-│  Client   │         │ Auth Service  │          │ Other Service│
-└────┬─────┘         └──────┬───────┘          └─────┬───────┘
-     │                        │                           │
-     │  1. Register/Login   │                           │
-     │─────────────────────>│                         │
-     │                      │                           │
-     │  2. JWT Token        │                           │
-     │<─────────────────────│                         │
-     │                      │                           │
-     │  3. Request + Token  │                           │
-     │─────────────────────────────────────────────>│
-     │                      │                           │
+┌──────────┐         ┌──────────────┐         ┌─────────────┐
+│  Client  │         │ Auth Service │         │Other Service│
+└────┬─────┘         └──────┬───────┘         └─────┬───────┘
+     │                      │                        │
+     │  1. Register/Login   │                        │
+     │─────────────────────>│                        │
+     │                      │                        │
+     │  2. JWT Token        │                        │
+     │<─────────────────────│                        │
+     │                      │                        │
+     │  3. Request + Token  │                        │
+     │───────────────────────────────────────────────>│
+     │                      │                        │
      │                      │  4. Verify with public key
-     │                      │                           │
-     │  5. Response         │                           │
-     │<─────────────────────────────────────────────│
+     │                      │                        │
+     │  5. Response         │                        │
+     │<───────────────────────────────────────────────│
 ```
 
 ### JWT Token Structure
