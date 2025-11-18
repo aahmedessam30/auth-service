@@ -21,6 +21,9 @@ help: ## Show this help message
 	@echo -e "$(BOLD)$(YELLOW)[Setup & Installation]$(NC)"
 	@grep -E '^(install|setup):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BOLD)$(GREEN)%-18s$(NC) %s\n", $$1, $$2}'
 	@echo ""
+	@echo -e "$(BOLD)$(YELLOW)[Security]$(NC)"
+	@grep -E '^(generate-keys):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BOLD)$(MAGENTA)%-18s$(NC) %s\n", $$1, $$2}'
+	@echo ""
 	@echo -e "$(BOLD)$(YELLOW)[Docker Commands]$(NC)"
 	@grep -E '^(start|stop|restart|build|ps|down-volumes):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BOLD)$(BLUE)%-18s$(NC) %s\n", $$1, $$2}'
 	@echo ""
@@ -47,6 +50,20 @@ install: ## Install dependencies and setup environment
 	cp -n .env.example .env || true
 	php artisan key:generate
 	@echo -e "$(BOLD)$(GREEN)[OK] Installation complete!$(NC)"
+
+generate-keys: ## Generate JWT RSA key pair (4096-bit)
+	@echo -e ""
+	@echo -e "$(BOLD)$(CYAN)================================================================$(NC)"
+	@echo -e "$(BOLD)$(CYAN)            Generating JWT RSA Keys (4096-bit)...$(NC)"
+	@echo -e "$(BOLD)$(CYAN)================================================================$(NC)"
+	@mkdir -p keys
+	@openssl genrsa -out keys/private.pem 4096 2>/dev/null
+	@openssl rsa -in keys/private.pem -pubout -out keys/public.pem 2>/dev/null
+	@chmod 600 keys/private.pem
+	@chmod 644 keys/public.pem
+	@echo -e "$(BOLD)$(GREEN)[OK] JWT keys generated successfully!$(NC)"
+	@echo -e "$(BOLD)$(YELLOW)[INFO] Private key: keys/private.pem (keep secure!)$(NC)"
+	@echo -e "$(BOLD)$(YELLOW)[INFO] Public key:  keys/public.pem (distribute to services)$(NC)"
 
 start: ## Start Docker containers
 	@echo -e ""

@@ -88,21 +88,21 @@ This service is the **central authentication authority** for your microservice e
 
 ```bash
 # Clone the repository
-git clone <your-repository-url> auth-service
+git clone https://github.com/aahmedessam30/auth-service.git auth-service
 cd auth-service
 
 # Copy environment file
 cp .env.example .env
 
-# Generate JWT keys
-openssl genrsa -out keys/private.pem 4096
-openssl rsa -in keys/private.pem -pubout -out keys/public.pem
+# Generate JWT keys (4096-bit RSA)
+make generate-keys
 
 # Install dependencies and start containers (using Make)
 make setup
 
 # Or manually:
 composer install
+make generate-keys
 docker-compose up -d --build
 docker-compose exec app php artisan migrate
 ```
@@ -131,23 +131,23 @@ This service implements **JWT RS256 token generation** as the central authentica
 ### JWT Token Flow
 
 ```
-┌──────────┐         ┌──────────────┐         ┌─────────────┐
-│  Client  │         │ Auth Service │         │Other Service│
-└────┬─────┘         └──────┬───────┘         └─────┬───────┘
-     │                      │                        │
-     │  1. Register/Login   │                        │
-     │─────────────────────>│                        │
-     │                      │                        │
-     │  2. JWT Token        │                        │
-     │<─────────────────────│                        │
-     │                      │                        │
-     │  3. Request + Token  │                        │
-     │───────────────────────────────────────────────>│
-     │                      │                        │
+┌──────────┐         ┌──────────────┐          ┌─────────────┐
+│  Client   │         │ Auth Service  │          │ Other Service│
+└────┬─────┘         └──────┬───────┘          └─────┬───────┘
+     │                        │                           │
+     │  1. Register/Login   │                           │
+     │─────────────────────>│                         │
+     │                      │                           │
+     │  2. JWT Token        │                           │
+     │<─────────────────────│                         │
+     │                      │                           │
+     │  3. Request + Token  │                           │
+     │─────────────────────────────────────────────>│
+     │                      │                           │
      │                      │  4. Verify with public key
-     │                      │                        │
-     │  5. Response         │                        │
-     │<───────────────────────────────────────────────│
+     │                      │                           │
+     │  5. Response         │                           │
+     │<─────────────────────────────────────────────│
 ```
 
 ### JWT Token Structure
@@ -185,6 +185,10 @@ After successful authentication, the service issues a JWT containing:
 #### Generating Keys
 
 ```bash
+# Generate JWT RSA key pair (4096-bit) with proper permissions
+make generate-keys
+
+# Or manually:
 # Generate private key (4096-bit RSA) - KEEP SECURE!
 openssl genrsa -out keys/private.pem 4096
 
@@ -709,6 +713,7 @@ All endpoints return a standardized JSON response:
 ```bash
 make help          # Show all available commands
 make install       # Install dependencies
+make generate-keys # Generate JWT RSA key pair (4096-bit)
 make start         # Start Docker containers
 make stop          # Stop containers
 make restart       # Restart containers
